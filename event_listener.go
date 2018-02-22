@@ -1,5 +1,3 @@
 package deepstreamio
 
-type EventListener interface {
-    OnEvent(eventName string, args interface{})
-}
+type EventListener func(eventName string, args interface{})

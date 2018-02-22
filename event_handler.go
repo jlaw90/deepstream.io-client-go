@@ -33,7 +33,7 @@ func newEventHandler(client *Client, clientConfig *ClientConfig) *EventHandler {
     return e
 }
 
-func (e *EventHandler) Subscribe(eventName string, eventListener *EventListener) {
+func (e *EventHandler) Subscribe(eventName string, eventListener EventListener) {
     if e.emitter.GetListenerCount(eventName) > 0 {
         e.subscriptions[eventName] = true
         e.ackTimeoutRegistry.add(Topic_Event, Action_Subscribe, eventName, "", nil, e.subscriptionTimeout)
@@ -42,7 +42,7 @@ func (e *EventHandler) Subscribe(eventName string, eventListener *EventListener)
     e.emitter.On(eventName, eventListener)
 }
 
-func (e *EventHandler) Unsubscribe(eventName string, eventListener *EventListener) {
+func (e *EventHandler) Unsubscribe(eventName string, eventListener EventListener) {
     delete(e.subscriptions, eventName)
     e.emitter.Off(eventName, eventListener)
 

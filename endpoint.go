@@ -17,14 +17,13 @@ func newEndpoint(url string, connection *connection) *endpoint {
     return &endpoint{url: url, connection: connection, isWebsocketClosed: make(chan bool, 1)}
 }
 
-func (e *endpoint) send(msg string) {
+func (e *endpoint) send(msg string) error {
     logrus.WithField("msg", msg).Debug("Sent message")
-    go func() {
-        var err = e.websocketConn.WriteMessage(websocket.TextMessage, []byte(msg))
-        if err != nil {
-            e.connection.onError(err.Error())
-        }
-    }()
+    var err = e.websocketConn.WriteMessage(websocket.TextMessage, []byte(msg))
+    if err != nil {
+        e.connection.onError(err.Error())
+    }
+    return err
 }
 
 func (e *endpoint) close(forceClose bool) {

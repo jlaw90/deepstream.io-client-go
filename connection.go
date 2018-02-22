@@ -2,6 +2,7 @@ package deepstreamio
 
 import (
     "bytes"
+    "errors"
     "time"
 )
 
@@ -44,26 +45,29 @@ func newConnection(url string, clientConfig *ClientConfig, client *Client) *conn
     return conn
 }
 
-func (c *connection) authenticate(authParams string, loginCallback func(loginResult *LoginResult)) {
+func (c *connection) authenticate(authParams string, loginCallback func(loginResult *LoginResult)) error {
     c.loginCallback = loginCallback
     c.authParams = authParams
 
     if c.tooManyAuthAttempts || c.challengeDenied {
         c.client.onError(Topic_Error, Event_IsClosed, "This client's connection was closed")
         c.loginCallback(getLoginResultFailure(Event_IsClosed, "This client's connection was closed"))
-        return
+        return errors.New("connection is closed")
     }
 
     if c.connectionState == ConnectionState_AwaitingAuthentication {
-        c.sendAuthMessage()
+        return c.sendAuthMessage()
     }
+
+    return nil
 }
 
-func (c *connection) send(message string) {
+func (c *connection) send(message string) error {
     if c.connectionState != ConnectionState_Open {
         c.messageBuffer.WriteString(message)
+        return nil
     } else {
-        c.endpoint.send(message)
+        return c.endpoint.send(message)
     }
 }
 
@@ -71,9 +75,9 @@ func (c *connection) sendMsg(topic Topic, action Action, data []string) {
     c.send(getMsg(topic, action, data))
 }
 
-func (c *connection) sendAuthMessage()  {
+func (c *connection) sendAuthMessage() error {
     c.setState(ConnectionState_Authenticating)
-    c.endpoint.send(getMsg(Topic_Auth, Action_Request, []string{c.authParams}))
+    return c.endpoint.send(getMsg(Topic_Auth, Action_Request, []string{c.authParams}))
 }
 
 func (c *connection) close(forceClose bool) {

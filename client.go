@@ -1,5 +1,7 @@
 package deepstreamio
 
+import "errors"
+
 func NewClient(url string, clientConfig *ClientConfig) *Client {
 
     var clonedClientConfig  = clientConfig.cloneWithDefaults()
@@ -33,13 +35,21 @@ type Client struct {
     PresenceHandler         *PresenceHandler
 }
 
-func (c *Client) Login(authParams string) *LoginResult {
+func (c *Client) Login(authParams string) (*LoginResult, error) {
     loginResultChan := make(chan *LoginResult)
-    c.connection.authenticate(authParams, func(loginResult *LoginResult) {
+    err := c.connection.authenticate(authParams, func(loginResult *LoginResult) {
         loginResultChan <- loginResult
     })
 
-    return <- loginResultChan
+    if err != nil {
+        return nil, err
+    }
+
+    if c.GetConnectionState() == ConnectionState_Error {
+        return nil, errors.New("connection is in error state")
+    }
+
+    return <- loginResultChan, nil
 }
 
 func (c *Client) Close() {
